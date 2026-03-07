@@ -22,63 +22,82 @@ app.post('/api/analyze', upload.single('document'), async (req, res) => {
             return res.status(400).json({ error: 'No PDF file uploaded.' });
         }
 
-        // Parse PDF text
-        const pdfData = await pdfParse(req.file.buffer);
-        let extractedText = pdfData.text;
-
-        // Truncate text if too long to save token cost and prevent errors
-        if (extractedText.length > 50000) {
-            extractedText = extractedText.substring(0, 50000) + '...[TRUNCATED]';
+        // Check file size (Vercel limit for serverless is 4.5MB, locally it's memory limited)
+        if (req.file.size > 10 * 1024 * 1024) {
+            return res.status(400).json({ error: 'File size too large. Maximum is 10MB.' });
         }
 
-        // Prompt for Gemini AI
+        // Gemini 1.5 Flash supports native PDF analysis. 
+        // This is much more accurate for scanned documents than pdf-parse.
+        const model = ai.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            generationConfig: { responseMimeType: "application/json" }
+        });
+
+        // Prompt for the AI
         const prompt = `
-You are an expert legal aide, skilled in deeply analyzing legal contracts and policies. 
-Your goal is to parse the provided text of a legal document and output a structured JSON analysis.
+            You are an expert legal aide. Analyze this entire legal document and output a structured JSON analysis.
+            1. "risky_clauses": Find predatory/risky clauses (e.g., auto-renewal, waived rights, hidden fees, data selling). 
+               Each must have: "original_text", "simplified" explanation, "risk_level" (Low, Medium, High), and "reason".
+            2. "summary": A brief, plain English overview.
+            3. "key_points": Most critical takeaways.
 
-Analyze the contract for:
-1. "risky_clauses": Find any predatory or excessively risky clauses (e.g., auto-renewal without notice, waived rights, arbitration clauses, hidden fees, data selling, indemnification requirements). For each, extract the original text, provide a "simplified" explanation of what it actually means, and assign a "risk_level" (Low, Medium, High).
-2. "summary": A brief, plain English summary of what the document as a whole entails.
-3. "key_points": A short list of the most critical takeaways for the user.
+            Output format (JSON only):
+            {
+              "summary": "...",
+              "key_points": ["...", "..."],
+              "risky_clauses": [
+                {
+                  "original_text": "...",
+                  "simplified": "...",
+                  "risk_level": "...",
+                  "reason": "..."
+                }
+              ]
+            }
+        `;
 
-Format your response strictly as a JSON object matching this structure:
-{
-  "summary": "Plain text summary here",
-  "key_points": ["point 1", "point 2", "point 3"],
-  "risky_clauses": [
-    {
-      "original_text": "Original complex text",
-      "simplified": "What this actually means",
-      "risk_level": "High/Medium/Low",
-      "reason": "Why this is risky"
-    }
-  ]
-}
+        // Send binary PDF data to Gemini
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    data: req.file.buffer.toString('base64'),
+                    mimeType: "application/pdf"
+                }
+            },
+            prompt
+        ]);
 
-Document Text to analyze:
-${extractedText}
-`;
-
-        // Request generation
-        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(prompt);
         const response = await result.response;
-        let resultText = response.text();
+        const resultText = response.text();
 
         let jsonResult;
         try {
-            // Remove potential markdown blocks
+            // Remove markdown blocks if present
             const cleanText = resultText.replace(/```json\n?|```/g, '').trim();
             jsonResult = JSON.parse(cleanText);
         } catch (e) {
             console.error('JSON Parse Error:', e, 'Raw Text:', resultText);
-            return res.status(500).json({ error: 'AI returned invalid formatting', details: e.message });
+            return res.status(500).json({
+                error: 'AI returned invalid formatting',
+                details: e.message,
+                raw: resultText.substring(0, 100)
+            });
         }
 
         return res.json({ success: true, data: jsonResult });
     } catch (error) {
         console.error('Error during analysis:', error);
-        return res.status(500).json({ error: 'Failed to analyze document', details: error.message });
+
+        // Better error user messaging
+        let errorMsg = 'Failed to analyze document';
+        if (error.message.includes('API key')) {
+            errorMsg = 'Missing or invalid Gemini API Key. Please configure it in .env locally.';
+        } else if (error.message.includes('quota')) {
+            errorMsg = 'AI quota exceeded. Please try again in 1 minute.';
+        }
+
+        return res.status(500).json({ error: errorMsg, details: error.message });
     }
 });
 
