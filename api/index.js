@@ -16,7 +16,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-app.post('*', upload.single('document'), async (req, res) => {
+app.post('/api/analyze', upload.single('document'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No PDF file uploaded.' });
@@ -81,5 +81,12 @@ ${extractedText}
         return res.status(500).json({ error: 'Failed to analyze document', details: error.message });
     }
 });
+
+if (process.env.NODE_ENV !== 'production' && require.main === module) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Backend server running locally on http://localhost:${PORT}`);
+    });
+}
 
 module.exports = app;
