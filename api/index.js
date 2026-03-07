@@ -60,23 +60,19 @@ ${extractedText}
 `;
 
         // Request generation
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
-        });
-
-        let resultText = response.text;
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let resultText = response.text();
 
         let jsonResult;
         try {
-            jsonResult = JSON.parse(resultText);
+            // Remove potential markdown blocks
+            const cleanText = resultText.replace(/```json\n?|```/g, '').trim();
+            jsonResult = JSON.parse(cleanText);
         } catch (e) {
-            // If it returned json with markdown backticks
-            resultText = resultText.replace(/```json/g, '').replace(/```/g, '').trim();
-            jsonResult = JSON.parse(resultText);
+            console.error('JSON Parse Error:', e, 'Raw Text:', resultText);
+            return res.status(500).json({ error: 'AI returned invalid formatting', details: e.message });
         }
 
         return res.json({ success: true, data: jsonResult });
