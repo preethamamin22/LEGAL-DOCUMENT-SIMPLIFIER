@@ -139,7 +139,7 @@ Example:
         body: JSON.stringify({
           contents: [{
             parts: [
-              { inline_data: { mime_type: "application/pdf", data: base64Data } },
+              { inlineData: { mimeType: "application/pdf", data: base64Data } },
               { text: prompt }
             ]
           }],
