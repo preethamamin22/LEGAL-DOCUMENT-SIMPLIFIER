@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, AlertTriangle, ShieldCheck,
   ChevronRight, CheckCircle2, AlertCircle, Key,
-  Eye, EyeOff, X, Zap, Scale, FileWarning, BarChart3, Lock
+  Eye, EyeOff, X, Zap, Scale, FileWarning, BarChart3, Lock, DownloadCloud
 } from "lucide-react";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
@@ -177,6 +177,43 @@ Example:
     if (score >= 7) return "#f43f5e";
     if (score >= 4) return "#f59e0b";
     return "#10b981";
+  };
+
+  const handleDownloadReport = () => {
+    if (!result) return;
+    
+    let reportTxt = `LEGAL DOCUMENT ANALYSIS REPORT\n`;
+    reportTxt += `Document Type: ${result.document_type || "Unknown Document"}\n`;
+    reportTxt += `Risk Score: ${result.risk_score || "N/A"}/10\n\n`;
+    reportTxt += `--- EXECUTIVE SUMMARY ---\n${result.summary || "No summary available."}\n\n`;
+    
+    if (result.key_points && result.key_points.length > 0) {
+      reportTxt += `--- KEY POINTS ---\n`;
+      result.key_points.forEach((pt, i) => { reportTxt += `${i + 1}. ${pt}\n`; });
+      reportTxt += `\n`;
+    }
+    
+    if (result.risky_clauses && result.risky_clauses.length > 0) {
+      reportTxt += `--- CRITICAL RISKS DETECTED (${result.risky_clauses.length}) ---\n`;
+      result.risky_clauses.forEach((clause) => {
+        reportTxt += `\n[${clause.risk_level.toUpperCase()} RISK]\n`;
+        reportTxt += `Original Text: ${clause.original_text}\n`;
+        reportTxt += `Plain English: ${clause.simplified}\n`;
+        if (clause.reason) reportTxt += `Reason: ${clause.reason}\n`;
+      });
+    } else {
+      reportTxt += `--- CRITICAL RISKS DETECTED (0) ---\nNo major predatory clauses were detected.\n`;
+    }
+    
+    const blob = new Blob([reportTxt], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Legal_Analysis_Report_${new Date().getTime()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -370,17 +407,23 @@ Example:
                       <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white">{result.document_type || "Legal Document"}</h3>
                     </div>
                     {result.risk_score !== undefined && (
-                      <div className="flex items-center gap-3 bg-slate-950/50 p-3 sm:p-4 rounded-2xl border border-slate-800/50 shadow-inner w-full sm:w-auto sm:min-w-[160px] justify-center shrink-0">
-                        <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
-                          <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1e293b" strokeWidth="4" />
-                            <circle cx="18" cy="18" r="15.9" fill="none" stroke={scoreColor(result.risk_score)} strokeWidth="4" strokeDasharray={`${(result.risk_score / 10) * 100} 100`} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-                          </svg>
-                          <span className="absolute font-black text-lg sm:text-xl" style={{ color: scoreColor(result.risk_score) }}>{result.risk_score}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-slate-500 font-bold text-[10px] sm:text-xs uppercase tracking-wider">Risk Score</span>
-                          <span className="text-slate-300 font-medium text-xs sm:text-sm">out of 10</span>
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">
+                        <button onClick={handleDownloadReport} className="flex items-center gap-2 px-4 py-3 sm:py-4 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 rounded-2xl border border-indigo-500/20 transition-colors text-xs sm:text-sm font-bold w-full sm:w-auto justify-center shadow-inner mt-2 sm:mt-0">
+                          <DownloadCloud className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <span className="shrink-0">Download Report</span>
+                        </button>
+                        <div className="flex items-center gap-3 bg-slate-950/50 p-3 sm:p-4 rounded-2xl border border-slate-800/50 shadow-inner w-full sm:w-auto sm:min-w-[160px] justify-center">
+                          <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
+                            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                              <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1e293b" strokeWidth="4" />
+                              <circle cx="18" cy="18" r="15.9" fill="none" stroke={scoreColor(result.risk_score)} strokeWidth="4" strokeDasharray={`${(result.risk_score / 10) * 100} 100`} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+                            </svg>
+                            <span className="absolute font-black text-lg sm:text-xl" style={{ color: scoreColor(result.risk_score) }}>{result.risk_score}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-slate-500 font-bold text-[10px] sm:text-xs uppercase tracking-wider">Risk Score</span>
+                            <span className="text-slate-300 font-medium text-xs sm:text-sm">out of 10</span>
+                          </div>
                         </div>
                       </div>
                     )}
