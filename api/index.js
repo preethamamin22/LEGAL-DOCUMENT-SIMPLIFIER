@@ -156,15 +156,21 @@ Output format:
     }
 });
 
-// Error handler for multer
+// Error handler for multer and other errors
 app.use((err, req, res, next) => {
+    console.error('❌ Server Error:', err.message);
+    
     if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
     }
     if (err.message === 'Only PDF files are supported.') {
         return res.status(400).json({ error: err.message });
     }
-    next(err);
+    
+    res.status(err.status || 500).json({
+        error: err.message || 'An internal server error occurred.',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 });
 
 const PORT = process.env.PORT || 5000;

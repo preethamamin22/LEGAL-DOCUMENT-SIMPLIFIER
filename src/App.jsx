@@ -103,7 +103,16 @@ function App() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        throw new Error(`Server returned an unexpected response (${response.status}). Please try again.`);
+      }
+
       if (!response.ok) {
          let msg = data.error || "Analysis failed.";
          if (msg.includes("API key")) msg = "Invalid API key. Please check your Gemini API key.";
