@@ -18,8 +18,7 @@ if (!process.env.GEMINI_API_KEY) {
     console.error('   Please create a .env file in the project root with: GEMINI_API_KEY=your_key_here');
 }
 
-// Set up Google GenAI with the new SDK
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'missing' });
+// Removed global ai instance because we will initialize it per-request using the user's API key
 
 // Set up file upload to memory
 const storage = multer.memoryStorage();
@@ -49,31 +48,40 @@ app.post('/api/analyze', upload.single('document'), async (req, res) => {
             return res.status(400).json({ error: 'No PDF file uploaded.' });
         }
 
-        if (!process.env.GEMINI_API_KEY) {
+        const reqApiKey = req.body.apiKey || process.env.GEMINI_API_KEY;
+        if (!reqApiKey || reqApiKey === 'your_gemini_api_key_here') {
             return res.status(500).json({
-                error: 'Gemini API key not configured. Please add GEMINI_API_KEY to your .env file.'
+                error: 'Gemini API key not provided or invalid. Please add your key in the UI.'
             });
         }
+        
+        const ai = new GoogleGenAI({ apiKey: reqApiKey });
 
-        console.log(`📄 Analyzing PDF: ${req.file.originalname} (${(req.file.size / 1024).toFixed(1)} KB)`);
+        console.log(`📄 Analyzing PDF: ${req.file.originalname} (${(req.file.size / 1024).toFixed(1)} KB) using provided API key`);
 
         const prompt = `You are an expert legal aide. Carefully analyze this entire legal document and output a structured JSON analysis.
 
-1. "risky_clauses": Find ALL predatory, unfair, or risky clauses (e.g., auto-renewal, waived rights, hidden fees, data selling, unlimited liability, one-sided termination, arbitration clauses, broad indemnification). 
+1. "document_type": The type of legal document (e.g., "NDA", "Employment Contract", "Terms of Service").
+
+2. "risk_score": Overall risk score from 1 to 10 (number, 10 = extremely risky).
+
+3. "summary": A concise plain English overview of what this document is about, who the parties are, and the main purpose.
+
+4. "key_points": An array of the 5-8 most important things someone should know before signing.
+
+5. "risky_clauses": Find ALL predatory, unfair, or risky clauses (e.g., auto-renewal, waived rights, hidden fees, data selling, unlimited liability, one-sided termination, arbitration clauses, broad indemnification). 
    Each clause must have:
    - "original_text": The exact text from the document (quote it directly)
    - "simplified": A plain English explanation of what it means
    - "risk_level": Either "High", "Medium", or "Low"
    - "reason": Why this clause is risky or concerning
 
-2. "summary": A concise plain English overview of what this document is about, who the parties are, and the main purpose.
-
-3. "key_points": An array of the 5-8 most important things someone should know before signing.
-
 IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks, no extra text.
 
 Output format:
 {
+  "document_type": "...",
+  "risk_score": 7,
   "summary": "...",
   "key_points": ["...", "..."],
   "risky_clauses": [

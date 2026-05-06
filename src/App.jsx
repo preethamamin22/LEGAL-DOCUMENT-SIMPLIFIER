@@ -5,9 +5,6 @@ import {
   ChevronRight, CheckCircle2, AlertCircle, Key,
   Eye, EyeOff, X, Zap, Scale, FileWarning, BarChart3, Lock, DownloadCloud
 } from "lucide-react";
-
-const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-
 function App() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -97,74 +94,24 @@ function App() {
     simulateProgress();
 
     try {
-      const base64Data = await fileToBase64(file);
-      const prompt = `You are an expert legal analyst. Carefully analyze this legal document and return a structured JSON strictly.
+      const formData = new FormData();
+      formData.append("document", file);
+      formData.append("apiKey", apiKey);
 
-1. "risky_clauses": Find ALL predatory, unfair, or risky clauses in the document.
-   Each clause must have:
-   - "original_text": exact text from the document (string)
-   - "simplified": Plain English explanation (string)
-   - "risk_level": "High", "Medium", or "Low" (string)
-   - "reason": Why this clause is risky (string)
-
-2. "summary": Concise plain English overview — what the document is about, who the parties are, main purpose (string).
-
-3. "key_points": Array of 5-8 most important things to know before signing (array of strings).
-
-4. "document_type": The type of document (string).
-
-5. "risk_score": Overall risk score 1-10 (number, 10 = extremely risky).
-
-IMPORTANT: Return ONLY valid JSON block. No introductory text. Ensure property names are exact.
-
-Example:
-{
-  "document_type": "NDA",
-  "risk_score": 7,
-  "summary": "Summary text.",
-  "key_points": ["Point 1", "Point 2"],
-  "risky_clauses": [
-    {
-      "original_text": "Text...",
-      "simplified": "Simple...",
-      "risk_level": "High",
-      "reason": "Reason..."
-    }
-  ]
-}`;
-
-      const response = await fetch(`${GEMINI_API_BASE}?key=${apiKey}`, {
+      const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inlineData: { mimeType: "application/pdf", data: base64Data } },
-              { text: prompt }
-            ]
-          }],
-          generationConfig: { responseMimeType: "application/json" }
-        })
+        body: formData,
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const msg = errData?.error?.message || `API error (${response.status})`;
-        if (response.status === 400 && msg.includes("API key")) throw new Error("Invalid API key. Please check your Gemini API key.");
-        if (response.status === 429) throw new Error("Rate limit hit. Wait a moment and try again.");
-        throw new Error(msg);
+         let msg = data.error || "Analysis failed.";
+         if (msg.includes("API key")) msg = "Invalid API key. Please check your Gemini API key.";
+         throw new Error(msg);
       }
 
-      const data = await response.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const cleanText = rawText.replace(/^[^{]*|[^}]*$/g, "").trim();
-
-      let parsed;
-      try { parsed = JSON.parse(cleanText); }
-      catch { throw new Error("AI returned an unexpected response format. Please try again."); }
-
       setProgress(100);
-      setTimeout(() => { setResult(parsed); setLoading(false); }, 400);
+      setTimeout(() => { setResult(data.data); setLoading(false); }, 400);
 
     } catch (err) {
       setError(err.message || "Failed to analyze document. Please try again.");
