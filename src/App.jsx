@@ -20,6 +20,7 @@ function App() {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const fileInputRef = useRef(null);
+  const resultsRef = useRef(null);
 
   // Fetch all recent analyses
   const fetchHistory = useCallback(async () => {
@@ -136,6 +137,9 @@ function App() {
         setResult(data.data); 
         setLoading(false); 
         fetchHistory(); // Refresh history lists!
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
       }, 400);
 
     } catch (err) {
@@ -211,11 +215,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f1c] text-slate-100 font-sans selection:bg-indigo-500/30 overflow-x-hidden relative">
+    <div className="min-h-[100dvh] bg-[#0a0f1c] text-slate-100 font-sans selection:bg-indigo-500/30 overflow-x-hidden relative">
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-indigo-600/10 blur-[120px] mix-blend-screen opacity-70" />
-        <div className="absolute top-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-purple-600/10 blur-[120px] mix-blend-screen opacity-70" />
-        <div className="absolute -bottom-[20%] left-[20%] w-[80vw] h-[80vw] rounded-full bg-rose-600/10 blur-[120px] mix-blend-screen opacity-40" />
+        <div className="absolute -top-[20%] -left-[10%] w-[120vw] md:w-[70vw] h-[120vw] md:h-[70vw] rounded-full bg-indigo-600/10 blur-[80px] md:blur-[120px] mix-blend-screen opacity-70" />
+        <div className="absolute top-[20%] -right-[10%] w-[100vw] md:w-[60vw] h-[100vw] md:h-[60vw] rounded-full bg-purple-600/10 blur-[80px] md:blur-[120px] mix-blend-screen opacity-70" />
+        <div className="absolute -bottom-[20%] left-[20%] w-[150vw] md:w-[80vw] h-[150vw] md:h-[80vw] rounded-full bg-rose-600/10 blur-[80px] md:blur-[120px] mix-blend-screen opacity-40" />
       </div>
 
       <AnimatePresence>
@@ -416,6 +420,9 @@ function App() {
                         onClick={() => {
                           setResult(item);
                           setFile(null); // Clear pending upload when showing loaded doc
+                          setTimeout(() => {
+                            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }, 100);
                         }}
                         className={`p-3 rounded-2xl border text-left cursor-pointer transition-all flex items-start gap-3.5 relative group/item overflow-hidden ${result?._id === item._id ? 'bg-indigo-600/10 border-indigo-500/40 shadow-[0_0_15px_-5px_rgba(99,102,241,0.2)]' : 'bg-slate-950/40 border-slate-800/80 hover:bg-slate-900/40 hover:border-slate-700/50'}`}
                       >
@@ -451,7 +458,7 @@ function App() {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="lg:col-span-7 w-full flex flex-col h-full min-h-[400px] sm:min-h-[500px]">
+          <motion.div ref={resultsRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="lg:col-span-7 w-full flex flex-col h-full min-h-[400px] sm:min-h-[500px]">
             <AnimatePresence mode="wait">
               {!result ? (
                 <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 bg-slate-900/30 backdrop-blur-sm border-2 border-dashed border-slate-700/50 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center justify-center text-center min-h-[350px]">
