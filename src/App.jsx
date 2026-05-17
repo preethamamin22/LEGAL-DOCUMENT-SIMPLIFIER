@@ -1,10 +1,11 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload, FileText, AlertTriangle, ShieldCheck,
   ChevronRight, CheckCircle2, AlertCircle, Key,
   Eye, EyeOff, X, Zap, Scale, FileWarning, BarChart3, Lock, DownloadCloud
 } from "lucide-react";
+
 function App() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -16,7 +17,29 @@ function App() {
   const [showApiModal, setShowApiModal] = useState(false);
   const [tempApiKey, setTempApiKey] = useState("");
   const [progress, setProgress] = useState(0);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Fetch all recent analyses
+  const fetchHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await fetch("/api/history");
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setHistory(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const saveApiKey = () => {
     const key = tempApiKey.trim();
@@ -65,17 +88,6 @@ function App() {
     }
   };
 
-  const fileToBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result;
-        resolve(String(result).split(",")[1]);
-      };
-      reader.onerror = reject;
-    });
-
   const simulateProgress = useCallback(() => {
     setProgress(0);
     const steps = [10, 25, 40, 60, 75, 88];
@@ -120,12 +132,38 @@ function App() {
       }
 
       setProgress(100);
-      setTimeout(() => { setResult(data.data); setLoading(false); }, 400);
+      setTimeout(() => { 
+        setResult(data.data); 
+        setLoading(false); 
+        fetchHistory(); // Refresh history lists!
+      }, 400);
 
     } catch (err) {
       setError(err.message || "Failed to analyze document. Please try again.");
       setLoading(false);
       setProgress(0);
+    }
+  };
+
+  const handleDeleteHistory = async (e, id) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this analysis from history?")) return;
+
+    try {
+      const response = await fetch(`/api/history/${id}`, {
+        method: "DELETE"
+      });
+      if (response.ok) {
+        setHistory(prev => prev.filter(item => item._id !== id));
+        if (result && result._id === id) {
+          setResult(null);
+        }
+      } else {
+        alert("Failed to delete analysis.");
+      }
+    } catch (err) {
+      console.error("Error deleting history:", err);
+      alert("An error occurred while deleting.");
     }
   };
 
@@ -271,7 +309,7 @@ function App() {
         </header>
 
         <main className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-5 w-full flex flex-col">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-5 w-full flex flex-col gap-6">
             <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-[2rem] p-5 sm:p-8 shadow-2xl relative overflow-hidden group">
               <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
               
@@ -280,7 +318,7 @@ function App() {
                 Upload Document
               </h2>
 
-              <div onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={() => fileInputRef.current?.click()} className={`relative flex flex-col items-center justify-center w-full min-h-[250px] sm:min-h-[300px] border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 overflow-hidden ${isDragging ? 'border-indigo-400 bg-indigo-900/20 scale-[1.02]' : file ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/50'}`}>
+              <div onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onClick={() => fileInputRef.current?.click()} className={`relative flex flex-col items-center justify-center w-full min-h-[200px] sm:min-h-[240px] border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-300 overflow-hidden ${isDragging ? 'border-indigo-400 bg-indigo-900/20 scale-[1.02]' : file ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/50'}`}>
                 {file ? (
                   <div className="flex flex-col items-center justify-center p-4 sm:p-6 text-center z-10 w-full px-8">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-indigo-600/20 flex items-center justify-center mb-4 shadow-inner shrink-0">
@@ -341,12 +379,82 @@ function App() {
                 )}
               </button>
             </div>
+
+            {/* Analysis History Box */}
+            <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-[2rem] p-5 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[400px]">
+              <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
+              
+              <h2 className="text-lg sm:text-xl font-bold mb-4 flex items-center justify-between text-white shrink-0">
+                <span className="flex items-center gap-3">
+                  <span className="p-1.5 sm:p-2 rounded-xl bg-purple-500/20 text-purple-400"><BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" /></span>
+                  Analysis History
+                </span>
+                {history.length > 0 && (
+                  <span className="text-[10px] bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-700/50 font-bold">{history.length}</span>
+                )}
+              </h2>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-3 min-h-[150px]">
+                {loadingHistory && history.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-slate-500 h-full">
+                    <div className="w-6 h-6 border-2 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-2" />
+                    <p className="text-xs">Loading history...</p>
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500 flex flex-col items-center justify-center h-full">
+                    <p className="text-sm font-medium">No recent analyses</p>
+                    <p className="text-xs text-slate-600 mt-1">Your simplified documents will show here.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 pr-1">
+                    {history.map((item) => (
+                      <motion.div
+                        key={item._id}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => {
+                          setResult(item);
+                          setFile(null); // Clear pending upload when showing loaded doc
+                        }}
+                        className={`p-3 rounded-2xl border text-left cursor-pointer transition-all flex items-start gap-3.5 relative group/item overflow-hidden ${result?._id === item._id ? 'bg-indigo-600/10 border-indigo-500/40 shadow-[0_0_15px_-5px_rgba(99,102,241,0.2)]' : 'bg-slate-950/40 border-slate-800/80 hover:bg-slate-900/40 hover:border-slate-700/50'}`}
+                      >
+                        {/* Risk Score badge */}
+                        <div className="flex flex-col items-center justify-center shrink-0 w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 text-xs font-black relative" style={{ color: scoreColor(item.risk_score) }}>
+                          {item.risk_score}
+                          <span className="text-[6px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Risk</span>
+                        </div>
+                        
+                        <div className="flex-1 min-w-0 pr-6">
+                           <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">{item.document_type || "NDA"}</p>
+                           <p className="text-xs font-bold text-white truncate">{item.fileName}</p>
+                           <p className="text-[9px] text-slate-500 mt-0.5 flex items-center gap-1.5">
+                             <span>{(item.fileSize / 1024).toFixed(1)} KB</span>
+                             <span>•</span>
+                             <span>{new Date(item.createdAt).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                           </p>
+                        </div>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={(e) => handleDeleteHistory(e, item._id)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 transition-all opacity-0 group-hover/item:opacity-100"
+                          title="Delete"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="lg:col-span-7 w-full flex flex-col h-full min-h-[400px] sm:min-h-[500px]">
             <AnimatePresence mode="wait">
               {!result ? (
-                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 bg-slate-900/30 backdrop-blur-sm border-2 border-dashed border-slate-700/50 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center justify-center text-center">
+                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 bg-slate-900/30 backdrop-blur-sm border-2 border-dashed border-slate-700/50 rounded-[2rem] p-6 sm:p-8 flex flex-col items-center justify-center text-center min-h-[350px]">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-800/40 flex items-center justify-center mb-6 shadow-inner relative">
                      <FileWarning className="w-8 h-8 sm:w-10 sm:h-10 text-slate-500" />
                      <div className="absolute inset-0 border border-slate-700/50 rounded-full animate-[ping_3s_ease-in-out_infinite] opacity-20"></div>
@@ -358,9 +466,9 @@ function App() {
                 <motion.div key="results" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex-1 bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-[2rem] p-5 sm:p-8 shadow-2xl flex flex-col space-y-6 sm:space-y-8 overflow-y-auto max-h-[85vh] custom-scrollbar">
                   
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6 pb-4 border-b border-slate-800">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <span className="inline-block px-2 sm:px-3 py-1 rounded-full bg-slate-800 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 border border-slate-700/50">Document Detected</span>
-                      <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white">{result.document_type || "Legal Document"}</h3>
+                      <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-white truncate max-w-full">{result.document_type || "Legal Document"}</h3>
                     </div>
                     {result.risk_score !== undefined && (
                       <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">

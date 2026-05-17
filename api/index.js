@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { GoogleGenAI } = require('@google/genai');
+const db = require('./db');
 
 const app = express();
 
@@ -18,13 +19,14 @@ app.use((req, res, next) => {
     next();
 });
 
+// Initialize database
+db.initDb();
+
 // Verify API key on startup
 if (!process.env.GEMINI_API_KEY) {
     console.error('❌ GEMINI_API_KEY is not set in .env file!');
     console.error('   Please create a .env file in the project root with: GEMINI_API_KEY=your_key_here');
 }
-
-// Removed global ai instance because we will initialize it per-request using the user's API key
 
 // Set up file upload to memory
 const storage = multer.memoryStorage();
@@ -43,9 +45,36 @@ const upload = multer({
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
+        database: db.isMongo() ? 'mongodb' : 'json-file',
         hasApiKey: !!process.env.GEMINI_API_KEY,
         timestamp: new Date().toISOString()
     });
+});
+
+// History endpoint - Get all past analyses
+app.get('/api/history', async (req, res) => {
+    try {
+        const history = await db.getAllAnalyses();
+        res.json({ success: true, data: history });
+    } catch (err) {
+        console.error('❌ Error fetching history:', err.message);
+        res.status(500).json({ error: 'Failed to retrieve analysis history.' });
+    }
+});
+
+// History endpoint - Delete a past analysis
+app.delete('/api/history/:id', async (req, res) => {
+    try {
+        const result = await db.deleteAnalysis(req.params.id);
+        if (result) {
+            res.json({ success: true, message: 'Analysis deleted successfully.' });
+        } else {
+            res.status(404).json({ error: 'Analysis not found.' });
+        }
+    } catch (err) {
+        console.error('❌ Error deleting analysis:', err.message);
+        res.status(500).json({ error: 'Failed to delete analysis.' });
+    }
 });
 
 app.post('/api/analyze', upload.single('document'), async (req, res) => {
@@ -54,7 +83,24 @@ app.post('/api/analyze', upload.single('document'), async (req, res) => {
             return res.status(400).json({ error: 'No PDF file uploaded.' });
         }
 
-        const reqApiKey = req.body.apiKey || process.env.GEMINI_API_KEY;
+        let reqApiKey = req.body?.apiKey;
+
+        // Extract from headers if not found in body
+        if (!reqApiKey && req.headers) {
+            reqApiKey = req.headers['x-api-key'] || req.headers['x-gemini-key'];
+            if (!reqApiKey && req.headers['authorization']) {
+                const authHeader = req.headers['authorization'];
+                if (authHeader.startsWith('Bearer ')) {
+                    reqApiKey = authHeader.substring(7).trim();
+                } else {
+                    reqApiKey = authHeader.trim();
+                }
+            }
+        }
+
+        // Fall back to environment variable
+        reqApiKey = (reqApiKey || process.env.GEMINI_API_KEY || '').trim();
+
         if (!reqApiKey || reqApiKey === 'your_gemini_api_key_here') {
             return res.status(500).json({
                 error: 'Gemini API key not provided or invalid. Please add your key in the UI.'
@@ -102,7 +148,7 @@ Output format:
 
         // Use the new @google/genai SDK - models.generateContent
         const result = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.5-flash',
             contents: [
                 {
                     role: 'user',
@@ -140,8 +186,20 @@ Output format:
             });
         }
 
-        console.log(`✅ Analysis complete: ${jsonResult.risky_clauses?.length || 0} risky clauses found.`);
-        return res.json({ success: true, data: jsonResult });
+        console.log(`✅ Analysis complete: ${jsonResult.risky_clauses?.length || 0} risky clauses found. Saving to database...`);
+        
+        // Save to Database
+        const savedDoc = await db.saveAnalysis({
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
+            document_type: jsonResult.document_type || 'Legal Document',
+            risk_score: jsonResult.risk_score || 0,
+            summary: jsonResult.summary || '',
+            key_points: jsonResult.key_points || [],
+            risky_clauses: jsonResult.risky_clauses || []
+        });
+
+        return res.json({ success: true, data: savedDoc });
 
     } catch (error) {
         console.error('❌ Error during analysis:', error.message);
@@ -149,7 +207,7 @@ Output format:
         let errorMsg = 'Failed to analyze document. Please try again.';
 
         if (error.message?.includes('API key') || error.message?.includes('INVALID_ARGUMENT')) {
-            errorMsg = 'Invalid or missing Gemini API key. Please check your .env file.';
+            errorMsg = 'Invalid or missing Gemini API key. Please check your .env file or your UI key settings.';
         } else if (error.message?.includes('quota') || error.message?.includes('RESOURCE_EXHAUSTED')) {
             errorMsg = 'API quota exceeded. Please wait a moment and try again.';
         } else if (error.message?.includes('SAFETY')) {

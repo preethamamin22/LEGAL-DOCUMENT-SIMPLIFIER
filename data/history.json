@@ -1,0 +1,77 @@
+[
+  {
+    "_id": "1779018097396jkva9",
+    "fileName": "Preetham NDA (1) (2) (1).pdf",
+    "fileSize": 2587319,
+    "document_type": "NON-DISCLOSURE AGREEMENT",
+    "risk_score": 9,
+    "summary": "This is a Non-Disclosure Agreement (NDA) between Sh. Aryan Ghosh (Disclosing Party) and Sh. Preetham B R (Receiving Party). The Disclosing Party is developing a blockchain-based ed-tech platform called \"DECENTRACLASSES,\" and the Receiving Party is engaged as a UI/UX Designer & Graphic Designer for this project. The NDA's primary purpose is to protect the Disclosing Party's confidential information from unauthorized disclosure, exploitation, misuse, or abuse by the Receiving Party. It includes stringent clauses on confidentiality, non-solicitation, non-competition, and non-disparagement.",
+    "key_points": [
+      "The definition of 'Confidential Information' is extremely broad, covering almost any information, past or future, that is disclosed or appears confidential.",
+      "The Receiving Party is prohibited from disclosing confidential information to anyone, including its own employees, without prior written consent from the Disclosing Party.",
+      "The Disclosing Party makes no warranties about the accuracy or completeness of the confidential information provided to the Receiving Party.",
+      "The Disclosing Party has broad rights to terminate the agreement immediately for various reasons, including if the Receiving Party fails to fulfill its duties, and can claim extensive damages.",
+      "The Receiving Party is obligated to bear all costs arising from any litigation or legal proceedings, regardless of fault or outcome.",
+      "Strict non-solicitation and non-competition clauses are in effect during the agreement term and for two years after termination, potentially limiting the Receiving Party's future work opportunities.",
+      "An unlimited non-disparagement clause prevents the Receiving Party from criticizing the Disclosing Party or its associates at any time, even after the agreement ends.",
+      "Confidentiality and non-use obligations survive for two years after the agreement terminates."
+    ],
+    "risky_clauses": [
+      {
+        "original_text": "Confidential Information - It means any information disclosed previously or in the future by a Disclosing Party to a Receiving Party, either directly or indirectly, in writing, orally or by inspection of tangible or intangible objects (including without limitation), legal documents, team arrangements, technical specifications, business plans, source codes, proprietary softwares, technical documentations, financial analyses, marketing plans, customer names, customer lists, customer data, product plans, products, services, inventions, processes, designs, drawings, engineering or statistics, know-how, trade secrets, or any other proprietary or business information), which is designated/marked as \"Confidential,” “Proprietary\", \"Privileged\", \"Secret\" information or some similar designation or whose confidential or proprietary nature is reasonably apparent under the circumstances.",
+        "simplified": "The definition of confidential information is extremely broad, covering virtually any information communicated in any form, past or future, that the Disclosing Party considers confidential or that appears to be confidential.",
+        "risk_level": "High",
+        "reason": "This broad definition places a significant burden on the Receiving Party to identify and protect all information, regardless of whether it was explicitly marked confidential. It covers past disclosures, future disclosures, and anything 'reasonably apparent' to be confidential, which can be subjective and lead to disputes, making accidental breaches more likely."
+      },
+      {
+        "original_text": "The Receiving Party further agrees and acknowledges that they shall not disclose or divulge any Confidential Information related to the Project which may come to their knowledge or possession during the term of this Agreement, and which should not be disclosed or made public. ... In addition to any other remedies available at law or in equity, the Disclosing Party shall be entitled to seek injunctive relief to prevent further unauthorized use or disclosure of the Confidential Information.",
+        "simplified": "The Receiving Party cannot disclose any project-related confidential information. A breach will be considered to cause 'irreparable harm,' allowing the Disclosing Party to seek immediate court orders (injunctive relief) in addition to other legal remedies.",
+        "risk_level": "Medium",
+        "reason": "Stating 'irreparable harm' upfront makes it easier for the Disclosing Party to obtain injunctions, which can quickly stop the Receiving Party from any perceived breach without a full trial, increasing the legal leverage of the Disclosing Party."
+      },
+      {
+        "original_text": "The Receiving Party shall not disclose any Confidential Information to any third party. Such third party shall exclude but not be limited to Receiving Party's employee(s), former employee(s), team members, agents or any other such persons (natural or juridical) who already has knowledge or possession the said/relevant Confidential Information with prior written consent of the Disclosing Party.",
+        "simplified": "The Receiving Party cannot disclose any confidential information to any third party, including its own employees or team members, without prior written consent from the Disclosing Party.",
+        "risk_level": "High",
+        "reason": "This clause is very stringent and potentially impractical. Requiring prior written consent for internal disclosure to employees or team members who need to work on the project could impede work efficiency and lead to accidental breaches if not managed perfectly."
+      },
+      {
+        "original_text": "All Confidential Information is provided on \"As Is\" basis. Disclosing Party makes no warranties, express, implied or otherwise, regarding its accuracy, completeness or performance.",
+        "simplified": "The Disclosing Party provides all confidential information \"as is,\" meaning they make no guarantees about its accuracy, completeness, or suitability.",
+        "risk_level": "Medium",
+        "reason": "This clause shifts all risk related to the quality or accuracy of the information onto the Receiving Party. If the Receiving Party relies on flawed information to perform their duties, they cannot hold the Disclosing Party responsible for any resulting issues."
+      },
+      {
+        "original_text": "Violation of any obligation, representation, warranty, or any provision by any of the Party contemplated under this Agreement, or any conduct/action that brings bad reputation to the Project or adversely affects its operations, shall constitute as a Material Breach of this Agreement (hereinafter referred to as \"Material Breach\"). ... In the event that the Receiving Party fails to fulfill its assigned duties, obligations, and responsibilities as outlined in this Agreement, then the Disclosing Party shall reserve the right to terminate the Agreement immediately. Additionally, the non-breaching party shall be liable for damages, including liquidated damages, to compensate for any losses, wasted time, resources, or missed opportunities caused by their actions.",
+        "simplified": "A \"Material Breach\" is broadly defined to include anything bringing \"bad reputation\" or \"adversely affecting operations.\" If the Receiving Party commits a Material Breach or fails its duties, the Disclosing Party can terminate immediately and claim extensive damages, including 'liquidated damages' and compensation for 'wasted time, resources, or missed opportunities.'",
+        "risk_level": "High",
+        "reason": "The definition of 'Material Breach' is very broad and subjective, giving the Disclosing Party wide discretion. The ability to terminate immediately and claim broad, potentially high damages places significant liability and risk on the Receiving Party for potentially minor or subjective infractions."
+      },
+      {
+        "original_text": "In the event of any dispute arising out of or in relation to this Agreement, the Parties shall first attempt to resolve the dispute through amicable negotiations. Failing to which, it shall be settled through remedies available before courts of law in New Delhi. All costs arising from such litigation or legal proceedings shall be borne by the Receiving Party.",
+        "simplified": "Disputes will be settled in New Delhi courts. Crucially, the Receiving Party is responsible for paying all legal costs associated with any litigation or legal proceedings, regardless of who initiated it or who wins.",
+        "risk_level": "High",
+        "reason": "This is an extremely one-sided and predatory clause. It severely disadvantages the Receiving Party by obligating them to bear all legal costs, which could be prohibitive, regardless of the merits of a claim or defense. This effectively deters the Receiving Party from challenging any claims or pursuing their own legal rights due to the financial burden."
+      },
+      {
+        "original_text": "The Receiving Party agrees that during the term of this Agreement and for a period of two (2) years thereafter, it shall neither directly nor indirectly solicit or attempt to solicit any employees, team members, contractors, clients, partners or customers of the Disclosing Party for any purpose without prior written permission of the Disclosing Party.",
+        "simplified": "The Receiving Party cannot solicit (hire away or work with) the Disclosing Party's employees, clients, or partners during the agreement and for two years after it terminates.",
+        "risk_level": "Medium",
+        "reason": "A two-year post-termination non-solicitation clause is common but can be broad. It restricts the Receiving Party's ability to hire qualified personnel or work with certain clients, potentially limiting their future business opportunities in a competitive field."
+      },
+      {
+        "original_text": "Parties agree that at all times during the term of this Agreement and for a period of two (2) years following the expiration of this Agreement, the Receiving Party shall neither compete with business(es) carried on by the Disclosing Party nor engage or participate in any business, directly or indirectly, or contract or any other opportunities (both full time and part-time) with respect to the Disclosing Party.",
+        "simplified": "The Receiving Party cannot compete with the Disclosing Party's business or participate in similar opportunities, full-time or part-time, during the agreement and for two years after it ends.",
+        "risk_level": "High",
+        "reason": "A two-year post-termination non-compete clause is very restrictive, especially for a freelancer like a UI/UX designer. Covering 'any business, directly or indirectly, or contract or any other opportunities' makes it extremely broad and could severely limit the Receiving Party's future employment or entrepreneurial opportunities in a similar industry."
+      },
+      {
+        "original_text": "The Receiving Party agrees and understands, that during the term of this Agreement and thereafter, it shall not, at any time, either directly or indirectly, criticize, ridicule, disparage the Disclosing Party, its agents, team members, partners or vendors, or make, publish, communicate any derogatory remarks, comments, or statements concerning them, their reputation, acts, conducts, omissions to any person, entity, on any social media platform or in public gatherings.",
+        "simplified": "The Receiving Party cannot criticize, ridicule, or disparage the Disclosing Party or its associates, directly or indirectly, at any time, even after the agreement ends, including on social media.",
+        "risk_level": "High",
+        "reason": "This is an unlimited non-disparagement clause that survives termination ('at any time, during the term and thereafter'). It is very broad, covering 'any derogatory remarks' and 'any social media platform or in public gatherings,' which could potentially stifle legitimate free speech or even reporting of misconduct if interpreted broadly, especially in the event of future disputes."
+      }
+    ],
+    "createdAt": "2026-05-17T11:41:37.396Z"
+  }
+]
