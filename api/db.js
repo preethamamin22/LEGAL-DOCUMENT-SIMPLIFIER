@@ -86,7 +86,11 @@ async function saveAnalysis(analysisData) {
             createdAt: new Date().toISOString()
         };
         db.unshift(newRecord); // Add to beginning
-        await writeJsonDb(db);
+        try {
+            await writeJsonDb(db);
+        } catch (e) {
+            console.warn('⚠️ Could not save history to file (read-only filesystem?). Returning document anyway.', e.message);
+        }
         return newRecord;
     }
 }
@@ -107,7 +111,11 @@ async function deleteAnalysis(id) {
         const initialLength = db.length;
         db = db.filter(item => item._id !== id);
         if (db.length !== initialLength) {
-            await writeJsonDb(db);
+            try {
+                await writeJsonDb(db);
+            } catch (e) {
+                console.warn('⚠️ Could not delete from file (read-only filesystem?)', e.message);
+            }
             return true;
         }
         return null;
